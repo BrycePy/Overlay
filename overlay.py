@@ -8,7 +8,7 @@ import traceback
 from io import BytesIO
 import base64
 import os
-from PIL import Image, ImageTk, ImageDraw, ImageFont, ImageEnhance, ImageFilter
+from PIL import Image, ImageTk, ImageDraw, ImageFont, ImageEnhance, ImageFilter, ImageGrab
 import uicore
 from loglistener import NoClientFoundError, LogListerner
 import util
@@ -41,8 +41,8 @@ def resource_path(relative_path):
     # print(base_path)
     return os.path.join(base_path, relative_path)
 
-font = ImageFont.truetype(font="arial.ttf", size=19)
-font = ImageFont.truetype(font=resource_path("Minecraft-Regular-Symbola.ttf"), size=19)
+font = ImageFont.truetype(font=resource_path("Roboto-Bold-uni.ttf"), size=19)
+#font = ImageFont.truetype(font=resource_path("Minecraft-Regular-Symbola.ttf"), size=19)
 
 async def await_global_task():
     while True:
@@ -99,7 +99,7 @@ async def log_reader(overlay):
     event.subscribe("lobby_join", lobby_join)
 
     while True:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.2)
         for message in log_listener.get_messages():
             print(message)
             await mp.process(message)
@@ -124,6 +124,7 @@ class Overlay:
         self.fg.attributes("-topmost",True)
         self.stats.attributes("-topmost",True)
 
+        self.bg.bind('<Double-Button-1>', self.mouse_double_click)
         self.bg.bind("<Button-1>", lambda e: (self.fg.lift(), self.root.lift(),
                                               self.stats.lift(), self.mouse_click(e)))
         self.bg.bind("<Motion>", self.mouse_hover)
@@ -155,6 +156,7 @@ class Overlay:
         self.loop.create_task(self.follow_worker())
 
         event.subscribe("player_list_update", self.render_cleanup)
+        event.subscribe("render_request",self.render_notification)
 
         self.loop.run_forever()
 
@@ -203,7 +205,7 @@ class Overlay:
         grip_frame.bind("<B1-Motion>", root_drag)
 
         root.update()
-        self.loop.create_task(root.updater(1/30))
+        #self.loop.create_task(root.updater(1/30))
         return root
 
     def bg_toplevel(self, root:tk.Toplevel):
@@ -258,18 +260,28 @@ class Overlay:
     def mouse_click(self, event):
         row_number = event.y // self.row_height
         username = list(player_data)[row_number-1]
-        test_text = f"test share stats for -> {username} <-"
-
         header_image = global_image.get(f"header-raw")
         stats_image = global_image.get(f"stats-{username}-raw")
-
         img = Image.new("RGB", (header_image.width, header_image.height + stats_image.height), "#000000")
         img.paste(header_image, (0, 0))
         img.paste(stats_image, (0, header_image.height))
-
         util.set_clipboard_image(img)
+        original_alpha = self.bg.get_alpha()
+        self.bg.set_alpha(1, force=True)
+        self.bg.set_alpha(original_alpha)
+        print("clicked", username)
 
-        print(test_text)
+    def mouse_double_click(self, event):
+        original_alpha = self.bg.get_alpha()
+        self.bg.set_alpha(1, force=True)
+        self.bg.update()
+        x1, y1 = self.root.winfo_rootx(), self.root.winfo_rooty()
+        x2 = self.bg.winfo_rootx() + self.bg.winfo_width()
+        y2 = self.bg.winfo_rooty() + self.bg.winfo_height()
+        img = ImageGrab.grab((x1, y1, x2, y2))
+        self.bg.set_alpha(original_alpha)
+        util.set_clipboard_image(img)
+        print("double click")
 
     def mouse_hover(self,event):
         row_number = event.y // self.row_height
@@ -289,20 +301,34 @@ class Overlay:
         self.root.close()
         exit(0)
 
+    rendering = True
     async def render_worker(self):
         while True:
             self.render()
-            await asyncio.sleep(1/60)
+            if self.rendering:
+                await asyncio.sleep(1/60)
+                #print("render")
+            else:
+                for i in range(10):
+                    if self.rendering: break
+                    await asyncio.sleep(0.1)
+                #print("idle")
 
     async def follow_worker(self):
         while True:
             self.follow(self.bg, self.root, "S")
             self.follow(self.fg, self.root, "S")
             self.follow(self.stats, self.bg, "S")
-            await asyncio.sleep(3)
+            await asyncio.sleep(1)
+
+    def render_notification(self,_):
+        self.rendering = True
 
     rendered = {}
     current_header = ""
+
+    pil_time_avg_buffer = []
+
     def render(self):
         canvas = self.canvas
         rendered = self.rendered
@@ -320,6 +346,7 @@ class Overlay:
             player_canvas =  rendered[ign]["image_id"]
 
             if player.pending_render:
+                ref = time.perf_counter()
                 updated = True
                 img = Image.new("RGBA", (win_width, self.row_height+4), (1,5,3,50))
                 renderer.Bedwars.render(img, ign, player, font)
@@ -329,10 +356,16 @@ class Overlay:
                 global_image[image_name] = ImageTk.PhotoImage(image=img)
                 canvas.itemconfigure(player_canvas, image=global_image[image_name], anchor="nw")
                 player.render_notification()
-                print("gen image", ign)
+
+                pil_time = time.perf_counter() - ref
+                self.pil_time_avg_buffer.append(pil_time)
+                if len(self.pil_time_avg_buffer)>10: self.pil_time_avg_buffer.pop(0)
+                average = sum(self.pil_time_avg_buffer) / len(self.pil_time_avg_buffer)
+                print(f"Generated image for {ign}. (t={pil_time:.3f}s avg={average:.3f}s)")
 
             rendered[ign]["target_y"] = count*self.row_height + 5 + self.row_height
 
+        all_done = True
         for ign in rendered:
             image_id = rendered[ign]["image_id"]
             target_y = rendered[ign]["target_y"]
@@ -341,10 +374,14 @@ class Overlay:
                 if current_y!=target_y:
                     rendered[ign]["current_y"] = target_y
                     canvas.coords(image_id, 0, int(current_y))
-                    print("ani done", ign)
             else:
-                rendered[ign]["current_y"] = (current_y*9 + target_y)/10
+                rendered[ign]["current_y"] = (current_y*6 + target_y)/7
                 canvas.coords(image_id, 0, int(current_y))
+                self.rendering = True
+                all_done = False
+
+        if all_done and self.rendering:
+            self.rendering = False
 
         self.render_header()
 

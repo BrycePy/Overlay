@@ -1,6 +1,7 @@
 import asyncio
 from asyncapis import AsyncAPI
 import time
+import event
 
 apikey = "44e1c058-bda3-4438-a695-6a2ca455872f"
 
@@ -79,3 +80,4 @@ class Player:
 
     def render_request(self):
         self.pending_render = True
+        event.post("render_request",None)

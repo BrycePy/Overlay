@@ -218,7 +218,7 @@ def send_to_clipboard(clip_type, data):
     win32clipboard.SetClipboardData(clip_type, data)
     win32clipboard.CloseClipboard()
 
-def set_clipboard(text):
+def set_clipboard_text(text):
     send_to_clipboard(win32con.CF_UNICODETEXT, text)
 
 def set_clipboard_image(image:Image.Image):
