@@ -7,6 +7,15 @@ import event
 import util
 from colored import fg, attr
 
+# -----------------------------
+# You have joined [VIP+] oSpittinz's party!
+# You'll be partying with: [MVP+] Kurenaiiii, [MVP+] B1u3Y
+# -----------------------------
+
+# -----------------------------
+# You left the party.
+# -----------------------------
+
 class ConsoleColour():
     BLACK = str(fg('black'))
     WHITE = str(fg('white'))
@@ -82,6 +91,7 @@ class AllGame:
         bw_lobby_chat = re.compile("^(?:\[(\w+).\]) (?:\[(.+)\] )?(\w+): (.+)").match(message)
         apikey_new = re.compile("^Your new API key is ((?:[a-f0-9]{8})-(?:[a-f0-9]{4})-(?:[a-f0-9]{4})-(?:[a-f0-9]{4})-(?:[a-f0-9]{12}))").match(message)
         msg_command = re.compile("^Can't find a player by the name of '([\w]{2,17})@'$").match(message)
+        party_invite = re.compile("^(?:\[.+\] )(\w+) has invited you to join (?:\[.+\] )?(?:their|(\w+)\'s) party!").match(message)
 
         join_queue = (join_message or start_timer or start2_timer) and previous_message == " "*7
         join_lobby = message == " "*25 and previous_message == " "*37
@@ -160,9 +170,15 @@ class AllGame:
 
         elif bw_lobby_chat and self.game_state == Bedwars.lobby:
             username = bw_lobby_chat.group(3)
-            raw_message = self.host.message_buffer[-1].get("raw_message","")
-
+            raw_message = self.host.message_buffer[-1].get("raw_message","").replace("?",chr(0x2605),1)
             event.post("chat",(username,raw_message))
+
+        elif party_invite:
+            username = party_invite.group(1)
+            username2 = party_invite.group(2)
+            event.post("chat",(username,": $c### $bPARTY INVITE $c###"))
+            if username2:
+                event.post("chat",(username2,": $c### $bPARTY INVITE $c###"))
 
 class MessageProcessor:
     def __init__(self):

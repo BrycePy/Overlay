@@ -45,7 +45,7 @@ class LogListerner:
         lines = self.get_update()
         #print(lines)
         pattern_chat = re.compile("(?:\:\ \[CHAT\]\ )(.+)")
-        pattern_party = re.compile("^.+ has invited you to join their party!")
+        pattern_party = re.compile("^.+ has invited you to join .+ party!")
         
         messages = list()
         for line in lines:
@@ -67,7 +67,7 @@ class LogListerner:
             client_path = os.path.expandvars(raw_path)
 
             if os.path.isfile(client_path):
-                print(" *  log_listener: {client} found at {client_path}")
+                print(f" *  log_listener: {client} found at {client_path}")
                 client_buffer[client] = {"last_modified":os.path.getmtime(client_path),
                                          "path": client_path}
         
