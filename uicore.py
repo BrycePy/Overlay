@@ -44,6 +44,7 @@ def set_borderless(hwnd=None,state=True):
     else:
         win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE, style_Normal)
         win32gui.MoveWindow(hwnd, 100, 100, 1000, 600, False)
+        time.sleep(0.05)
         win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
     
     free_cursor()
