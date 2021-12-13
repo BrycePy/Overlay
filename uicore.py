@@ -1,10 +1,6 @@
 import win32gui, win32con, win32com.client, win32process, win32api
 import time
 
-def window_enumeration_handler(hwnd, top_windows):
-    try: top_windows.append((hwnd,get_window_path(hwnd), win32gui.GetWindowText(hwnd)))
-    except Exception: pass
-
 def is_fullscreen(hwnd):
     style = win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE)
     return style | win32con.WS_SYSMENU != style
