@@ -3,7 +3,7 @@ from asyncapis import AsyncAPI
 import time
 import event
 
-apikey = "44e1c058-bda3-4438-a695-6a2ca455872f"
+apikey = "3af05c52-cf3e-4e86-8b8b-458f2a9f7333"
 
 test_uuid_cache = {}
 
@@ -54,10 +54,18 @@ class Player:
                     await self.update()
                 return
 
+            if data.get("cause",None) == "Invalid API key":
+                self.error_message = f"$cInvalid API key."
+                self.render_request()
+                await asyncio.sleep(2)
+                self.error_message = f"$bplease do $e/api new"
+                self.render_request()
+                return
+
             if data.get("player",0) is None:
                 self.nicked = True
                 return
-            
+
             player = data.get("player")
             self.uuid = player.get("uuid")
             test_uuid_cache[self.ign.lower()] = self.uuid
@@ -81,3 +89,8 @@ class Player:
     def render_request(self):
         self.pending_render = True
         event.post("render_request",None)
+
+    @staticmethod
+    def set_apikey(key):
+        global apikey
+        apikey = key

@@ -67,12 +67,16 @@ def text(img:Image.Image, xy:tuple, text:str, font:ImageFont.FreeTypeFont, shado
     return cumulative_width
 
 
-def get_star_text(star):
+def get_star_text(star, b=False):
     star0 = chr(0x2605)
     star1 = chr(0x272A)
     star2 = chr(0x2743)
 
-    low_prestiges = lambda star, color: f"${color}[{star}{star0}]"
+    if b:
+        low_prestiges = lambda star, color: f"${color}[{star}{star0}]"
+    else:
+        low_prestiges = lambda star, color: f"${color}{star}{star0}"
+
     zip_color = lambda texts, colors: "".join(f"${c}{t}" for t, c in zip(texts,colors))
 
     star_str = str(star)
