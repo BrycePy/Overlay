@@ -114,7 +114,24 @@ class Bedwars:
 class LobbyChat:
     def render(img, ign, player, font):
         data = player.data
-        bedwars = data.get("hypixel",{}).get("stats",{}).get("Bedwars",{})
+
+        hypixel = data.get("hypixel",{})
+        bedwars = hypixel.get("stats",{}).get("Bedwars",{})
+        
+        username = player.ign
+        rank = hypixel.get("newPackageRank","")
+        mvppp = hypixel.get("monthlyPackageRank","")
+        name_color = "$7"
+        text_color = "$7"
+        if rank.startswith("VIP"):
+            name_color = "$a"
+            text_color = "$f"
+        elif rank.startswith("MVP"):
+            name_color = "$b"
+            text_color = "$f"
+        if rank.startswith("MVP") and mvppp.startswith("SUPERSTAR"):
+            name_color = "$6"
+            text_color = "$f"
 
         def render_skin():
             if data.get("skin"):
@@ -126,23 +143,6 @@ class LobbyChat:
             util.text(img, (200,0), f"{ign}", font, anchor="C")
 
         def render_normal():
-            hypixel = data.get("hypixel")
-
-            rank = hypixel.get("newPackageRank","")
-            mvppp = hypixel.get("monthlyPackageRank","")
-            name_color = "$7"
-            text_color = "$7"
-            if rank.startswith("VIP"):
-                name_color = "$a"
-                text_color = "$f"
-            elif rank.startswith("MVP"):
-                name_color = "$b"
-                text_color = "$f"
-            if rank.startswith("MVP") and mvppp.startswith("SUPERSTAR"):
-                name_color = "$6"
-                text_color = "$f"
-
-            username = player.ign
             ws = bedwars.get("winstreak","$8-")
             fkdr = bedwars.get("final_kills_bedwars",0) / max(1,bedwars.get("final_deaths_bedwars",1))
             wlr = bedwars.get("wins_bedwars",0) / max(1,bedwars.get("losses_bedwars",1))
@@ -164,7 +164,11 @@ class LobbyChat:
             util.text(img, (330,0), f"$8{player.error_message}", font, anchor="L")
 
         def render_loading():
-            util.text(img, (70,0), f"$8{ign} (fetching stats..)", font)
+            message = data.get("latest_message",":-").split(":",1)[-1]
+            message = highlight(message,text_color)
+            util.text(img, (95,0), f"$7< fetching stats >", font, anchor="C")
+            util.text(img, (200,0), f"$8[????] {name_color}{username}$f: {text_color}{message}", font, anchor="L")
+
 
         if player.nicked:
             render_nick()
