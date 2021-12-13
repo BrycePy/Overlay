@@ -18,6 +18,7 @@ import sys
 from player import Player
 import renderer
 import win32gui
+from config import config
 
 """
 

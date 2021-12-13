@@ -2,8 +2,7 @@ import asyncio
 from asyncapis import AsyncAPI
 import time
 import event
-
-apikey = "3af05c52-cf3e-4e86-8b8b-458f2a9f7333"
+from config import config
 
 test_uuid_cache = {}
 
@@ -23,10 +22,11 @@ class Player:
         self.updating = True
         print("updating", self.ign)
         try:
+            hypixel_api_key = config.get("hypixel_api_key")
             if test_uuid_cache.get(self.ign):
-                status_code, data = await AsyncAPI.get_hypixel(api_key=apikey, uuid=test_uuid_cache.get(self.ign))
+                status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, uuid=test_uuid_cache.get(self.ign))
             else:
-                status_code, data = await AsyncAPI.get_hypixel(api_key=apikey, ign=self.ign)
+                status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, ign=self.ign)
 
             if data.get("cause",None) == "You have already looked up this name recently":
                 self.error_message = f"Username lookup failed."
@@ -39,7 +39,7 @@ class Player:
                     return
                 self.error_message = f"Retrying..."
                 self.render_request()
-                status_code, data = await AsyncAPI.get_hypixel(api_key=apikey, uuid=uuid)
+                status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, uuid=uuid)
             
             if data.get("throttle",None):
                 expected_reset = time.time()%60
@@ -92,5 +92,5 @@ class Player:
 
     @staticmethod
     def set_apikey(key):
-        global apikey
-        apikey = key
+        config.set("hypixel_api_key", key)
+        config.dump()
