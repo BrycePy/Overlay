@@ -22,7 +22,7 @@ def is_mouse_down():
     return win32api.GetKeyState(0x01) < 0 or win32api.GetKeyState(0x02) < 0
 
 def get_minecraft_hwnd():
-    return win32gui.FindWindow("LWJGL",None)
+    return win32gui.FindWindow("LWJGL", None)
 
 def get_active_hwnd():
     return win32gui.GetForegroundWindow()

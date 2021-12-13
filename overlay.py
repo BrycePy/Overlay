@@ -17,8 +17,9 @@ from BlurWindow.blurWindow import GlobalBlur
 import sys
 from player import Player
 import renderer
-import win32gui
+import win32gui, win32con
 from config import config
+import keyboard
 
 """
 
@@ -556,6 +557,17 @@ class Overlay:
                     if is_mc_pre != is_mc:
                         is_mc_pre = is_mc
                         on_window_change(is_mc)
+
+                    if class_name == "LWJGL":
+                        if win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE) & 0x80000000:
+                            global _fullscreen
+                            await asyncio.sleep(0.5)
+                            keyboard.press(87)
+                            keyboard.release(87)
+                            await asyncio.sleep(1)
+                            uicore.set_borderless(uicore.get_minecraft_hwnd(), True)
+                            _fullscreen = True
+
             except: pass
             await asyncio.sleep(0.5)
 
@@ -569,5 +581,31 @@ def relative_pos(root):
     x, y = root.winfo_x(), root.winfo_y()
     return mx-x, my-y
 
+
+
 if __name__ == '__main__':
-    Overlay()
+
+    _fullscreen = False
+    def keyboard_handle(event):
+        global _fullscreen
+        if uicore.is_minecraft():
+            if event.event_type == "down":
+                _fullscreen = not _fullscreen
+                if _fullscreen:
+                    uicore.set_borderless(uicore.get_minecraft_hwnd(), True)
+                else:
+                    uicore.set_borderless(uicore.get_minecraft_hwnd(), False)
+                    uicore.free_cursor()
+        else:
+            if event.event_type == "down": keyboard.press(event.scan_code)
+            elif event.event_type == "up": keyboard.release(event.scan_code)
+
+    keyboard.hook_key(87, keyboard_handle, suppress=True)
+    try:
+
+        Overlay()
+
+    finally:
+        if _fullscreen:
+            uicore.set_borderless(uicore.get_minecraft_hwnd(), False)
+            uicore.free_cursor()
