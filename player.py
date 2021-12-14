@@ -23,6 +23,11 @@ class Player:
         print("updating", self.ign)
         try:
             hypixel_api_key = config.get("hypixel_api_key")
+            if not hypixel_api_key:
+                self.error_message = f"$bplease do $e/api new"
+                self.render_request()
+                return
+
             if test_uuid_cache.get(self.ign):
                 status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, uuid=test_uuid_cache.get(self.ign))
             else:

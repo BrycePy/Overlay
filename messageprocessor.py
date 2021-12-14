@@ -180,6 +180,9 @@ class AllGame:
             if username2:
                 event.post("chat",(username2,": $c### $bPARTY INVITE $c###"))
 
+        elif "Can't find a player by the name of '@reload'" == message:
+            event.post("reload_request", None)
+
 class MessageProcessor:
     def __init__(self):
         self.message_buffer = [{}]*100

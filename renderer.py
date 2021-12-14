@@ -2,11 +2,15 @@ import re
 from tkinter import Message
 from PIL import Image, ImageTk, ImageDraw, ImageFont, ImageEnhance
 import util
+from config import config
 
 def highlight(message,color):
-    if "_Me" in message:
-        message = "$e"+message
-        color = "$e"
+    words = config.get("lobby_chat_words")
+    for word in words:
+        if word.lower() in message.lower():
+            message = "$e"+message
+            color = "$e"
+            break
 
     message = re.sub("(\d)\/(\d)",lambda match: f"$e{match.group(1)}/$6{match.group(2)}{color}",message)
     message = message.replace("OOF", f"$cOOF{color}") 

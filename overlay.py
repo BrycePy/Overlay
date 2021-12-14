@@ -20,6 +20,7 @@ import renderer
 import win32gui, win32con
 from config import config
 import keyboard
+import mouse
 
 """
 
@@ -156,13 +157,17 @@ class Overlay:
     row_height = 20
     scroll_offset = 0
     new_from_top = True
+    hide_schedule = None
 
     def __init__(self):
-        #global puro
+        pass
+
+    def start(self):
+        global puro
         self.loop = asyncio.get_event_loop()
 
         self.root = self.root_root()
-        #puro = tk.PhotoImage(file='puro.png')
+        puro = tk.PhotoImage(file=resource_path('puro.png'))
         self.bg = self.bg_toplevel(self.root)
         self.fg = self.fg_toplevel(self.root)
         self.stats = self.stats_toplevel(self.root)
@@ -172,7 +177,7 @@ class Overlay:
         self.fg.attributes("-topmost",True)
         self.stats.attributes("-topmost",True)
 
-        self.bg.bind('<Double-Button-1>', self.mouse_double_click)
+        #self.bg.bind('<Double-Button-1>', self.mouse_double_click)
         self.bg.bind("<Button-1>", lambda e: (self.fg.lift(), self.root.lift(),
                                               self.stats.lift(), self.mouse_click(e)))
         self.bg.bind("<Motion>", self.mouse_hover)
@@ -197,6 +202,7 @@ class Overlay:
 
         self.bg.bind("<MouseWheel>", on_mousewheel)
         self.bg.bind("<Leave>", on_leave)
+        self.root.bind("<Motion>", lambda e: self.wake())
 
         #self.bg.bind("<Enter>", lambda _: self.stats.set_alpha(1))
 
@@ -225,6 +231,8 @@ class Overlay:
         self.loop.create_task(self.follow_worker())
         self.loop.create_task(self.foreground_app_monitor())
 
+        event.subscribe("player_list_update", lambda e: self.wake())
+        event.subscribe("chat", lambda e: self.wake())
         event.subscribe("player_list_update", self.render_cleanup)
         event.subscribe("render_request",self.render_notification)
 
@@ -301,9 +309,10 @@ class Overlay:
         img = img.filter(ImageFilter.GaussianBlur(300))
         global_image["bg"] = ImageTk.PhotoImage(image=img)
         self.bg_canvas.create_image(0, 0, image=global_image["bg"], anchor="nw")
+        self.bg_canvas.create_image(0, 0, image=puro, anchor="nw")
 
-        #self.bg_canvas.create_image(0, 0, image=puro, anchor="nw")
-
+        top.update()
+        uicore.set_clickthrough(int(top.frame(),16), True)
         return top
 
     def fg_toplevel(self, root:tk.Toplevel):
@@ -319,7 +328,6 @@ class Overlay:
 
         top.update()
         uicore.set_clickthrough(int(top.frame(),16), True)
-
         return top
 
     def stats_toplevel(self, root:tk.Toplevel):
@@ -362,7 +370,7 @@ class Overlay:
         img = ImageGrab.grab((x1, y1, x2, y2), all_screens=True)
         self.bg.set_alpha(original_alpha)
         util.set_clipboard_image(img)
-        print("double click")
+        print("Take screenshot")
 
     def mouse_hover(self,event):
         pass
@@ -396,7 +404,7 @@ class Overlay:
         self.root.after(300, self.bg.close)
         self.root.after(300, self.fg.close)
         self.root.after(300, self.root.close)
-        exit(0)
+        sys.exit(0)
 
     rendering = True
     async def render_worker(self):
@@ -539,12 +547,14 @@ class Overlay:
                 self.bg.attributes("-topmost", True)
                 self.fg.attributes("-topmost", True)
                 self.fg.lift(self.bg)
+                uicore.set_clickthrough(int(self.bg.frame(),16), True)
             else:
                 self.root.attributes("-topmost", False)
                 self.bg.attributes("-topmost", False)
                 self.fg.attributes("-topmost", False)
                 win32gui.BringWindowToTop(hwnd)
                 self.root.after(100, self.fg.lift, self.bg)
+                uicore.set_clickthrough(int(self.bg.frame(),16), False)
 
         is_mc_pre = None
         while True:
@@ -568,8 +578,32 @@ class Overlay:
                             uicore.set_borderless(uicore.get_minecraft_hwnd(), True)
                             _fullscreen = True
 
+                    if not is_mc:
+                        self.wake()
+
             except: pass
             await asyncio.sleep(0.5)
+    def hide(self):
+        self.bg.set_alpha(0)
+        self.fg.set_alpha(0)
+        self.root.set_alpha(0.1)
+
+    def unhide(self):
+        self.bg.set_alpha(config.get("opacity"))
+        self.fg.set_alpha(1)
+        self.root.set_alpha(0.9)
+
+    def wake(self):
+        if self.hide_schedule:
+            self.root.after_cancel(self.hide_schedule)
+            self.hide_schedule = None
+        self.unhide()
+        fade_timeout_ms = int(config.get("fade_timeout", 5)*1000)
+        self.hide_schedule = self.root.after(fade_timeout_ms, self.hide)
+
+    async def double_click_check(self):
+        if hovering(self.bg) and self.bg.get_alpha() != 0:
+            self.mouse_double_click(None)
 
 def hovering(root):
     rx, ry = relative_pos(root)
@@ -581,9 +615,9 @@ def relative_pos(root):
     x, y = root.winfo_x(), root.winfo_y()
     return mx-x, my-y
 
-
-
 if __name__ == '__main__':
+    runner = asyncio.get_event_loop().create_task
+    overlay = Overlay()
 
     _fullscreen = False
     def keyboard_handle(event):
@@ -601,10 +635,10 @@ if __name__ == '__main__':
             elif event.event_type == "up": keyboard.release(event.scan_code)
 
     keyboard.hook_key(87, keyboard_handle, suppress=True)
+    mouse.on_double_click(lambda: global_task.append(runner(overlay.double_click_check())))
+
     try:
-
-        Overlay()
-
+        overlay.start()
     finally:
         if _fullscreen:
             uicore.set_borderless(uicore.get_minecraft_hwnd(), False)
