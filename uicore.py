@@ -55,6 +55,14 @@ def set_clickthrough(hwnd,state):
     else:     style = style & ~win32con.WS_EX_TRANSPARENT
     win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, style)
 
+def remove_exit_button(hwnd):
+    try:
+        hMenu = win32gui.GetSystemMenu(hwnd, 0)
+        if hMenu:
+            win32gui.DeleteMenu(hMenu, win32con.SC_CLOSE, win32con.MF_BYCOMMAND)
+    except Exception:
+        pass
+
 if __name__ == "__main__":
     while True:
         time.sleep(1)

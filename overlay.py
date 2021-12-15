@@ -1,3 +1,9 @@
+import os
+import time
+
+temp_title = f"BWSTATS OVERLAY CORE - {int(time.time()*1000)}"
+os.system(f"title {temp_title}")
+
 import event
 import asynctkcore as AsyncTk
 import tkinter as tk
@@ -7,12 +13,10 @@ import asyncio
 import traceback
 from io import BytesIO
 import base64
-import os
 from PIL import Image, ImageTk, ImageDraw, ImageFont, ImageEnhance, ImageFilter, ImageGrab
 import uicore
 from loglistener import NoClientFoundError, LogListerner
 import util
-import time
 from BlurWindow.blurWindow import GlobalBlur
 import sys
 from player import Player
@@ -618,6 +622,14 @@ def relative_pos(root):
 if __name__ == '__main__':
     runner = asyncio.get_event_loop().create_task
     overlay = Overlay()
+
+    title = "BWSTATS OVERLAY CORE"
+    
+    hwnd = win32gui.FindWindow(None, temp_title)
+    if hwnd:
+        uicore.remove_exit_button(hwnd)
+        win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+    os.system(f"title {title}")
 
     _fullscreen = False
     def keyboard_handle(event):
