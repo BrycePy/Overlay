@@ -124,7 +124,7 @@ async def log_reader(overlay):
 
         if player in checked: return
 
-        if len(player_order) > 30:
+        if len(player_order) > 100:
             pending_remove = player_order[-1]
             event.post("player_leave", pending_remove)
             print("removing", pending_remove)
@@ -237,6 +237,7 @@ class Overlay:
 
         event.subscribe("player_list_update", lambda e: self.wake())
         event.subscribe("chat", lambda e: self.wake())
+        event.subscribe("render_request", lambda e: self.wake())
         event.subscribe("player_list_update", self.render_cleanup)
         event.subscribe("render_request",self.render_notification)
 
@@ -416,12 +417,10 @@ class Overlay:
             self.render()
             if self.rendering:
                 await asyncio.sleep(1/60)
-                #print("render")
             else:
                 for i in range(10):
                     if self.rendering: break
                     await asyncio.sleep(0.1)
-                #print("idle")
 
     async def follow_worker(self):
         while True:
@@ -446,6 +445,7 @@ class Overlay:
         win_width = self.fg.winfo_width()
         win_height = self.fg.winfo_height()
         updated = False
+        render_court = 0
         for count, ign in enumerate(player_order):
             player = player_data[ign]
             data = player.data
@@ -461,7 +461,8 @@ class Overlay:
                     rendered[ign]["target_y"] = win_height + self.row_height
             player_canvas =  rendered[ign]["image_id"]
 
-            if player.pending_render:
+            if player.pending_render and render_court<1:
+                render_court += 1
                 ref = time.perf_counter()
                 updated = True
                 img = Image.new("RGBA", (win_width, self.row_height+4), (1,5,3,50))
@@ -505,7 +506,7 @@ class Overlay:
                 self.rendering = True
                 all_done = False
 
-        if all_done and self.rendering:
+        if all_done and self.rendering and render_court!=1:
             self.rendering = False
 
         self.render_header()
@@ -545,13 +546,14 @@ class Overlay:
 
     async def foreground_app_monitor(self):
         await asyncio.sleep(1)
-        def on_window_change(is_mc):
+        def on_window_change(is_mc, class_name):
             if is_mc:
                 self.root.attributes("-topmost", True)
                 self.bg.attributes("-topmost", True)
                 self.fg.attributes("-topmost", True)
                 self.fg.lift(self.bg)
                 uicore.set_clickthrough(int(self.bg.frame(),16), True)
+                event.post("mc_focus", None)
             else:
                 self.root.attributes("-topmost", False)
                 self.bg.attributes("-topmost", False)
@@ -567,10 +569,10 @@ class Overlay:
                 try:    class_name = win32gui.GetClassName(hwnd)
                 except: class_name = None
                 if class_name:
-                    is_mc = class_name == "LWJGL" or class_name == "TkTopLevel"
+                    is_mc = class_name == "LWJGL"
                     if is_mc_pre != is_mc:
                         is_mc_pre = is_mc
-                        on_window_change(is_mc)
+                        on_window_change(is_mc, class_name)
 
                     if class_name == "LWJGL":
                         if win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE) & 0x80000000:

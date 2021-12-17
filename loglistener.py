@@ -1,4 +1,6 @@
 import os, traceback, re
+from config import config
+import event
 
 class NoClientFoundError(Exception):
     """raise when there is no client found on user's system"""
@@ -7,8 +9,7 @@ class LogListerner:
     def __init__(self):
         self.client_name = None
         self.client_path = None
-        self.client_paths = {"Vanila/Forge":r"$appdata\.minecraft\logs\latest.log",
-                             "Lunar Client (1.8)":r"$USERPROFILE\.lunarclient\offline\1.8\logs\latest.log"}
+        self.client_paths = config.get("client_profiles")
         self.update_client()
         self.error_count = 0
         
@@ -16,6 +17,8 @@ class LogListerner:
             self.client_name = "Vanila/Forge Test"
             self.client_path = os.path.expandvars(r"$appdata\.minecraft\logs\latesttest.log")
             self.open(self.client_path)
+
+        event.subscribe("mc_focus", self.update_client)
         
     def close(self) -> None:
         try: self.log_file.close()
@@ -85,6 +88,7 @@ class LogListerner:
 
     def update_client(self,callback=None):
         name, path = self.get_client()
+        print("* MC window focused")
         if name!=self.client_name or path!=self.client_path:
             self.client_name = name
             self.client_path = path

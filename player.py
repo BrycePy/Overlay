@@ -3,8 +3,9 @@ from asyncapis import AsyncAPI
 import time
 import event
 from config import config
+from stats import Stats
 
-test_uuid_cache = {}
+uuid_cache = {}
 
 class Player:
     def __init__(self, ign=None, uuid=None):
@@ -17,7 +18,7 @@ class Player:
         self.error_message = None
         self.active = True
 
-    async def update(self):
+    async def update(self, timeout=5):
         if self.updating: return
         self.updating = True
         print("updating", self.ign)
@@ -28,10 +29,20 @@ class Player:
                 self.render_request()
                 return
 
-            if test_uuid_cache.get(self.ign):
-                status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, uuid=test_uuid_cache.get(self.ign))
+            cached_uuid = uuid_cache.get(self.ign.lower())
+            if cached_uuid:
+                status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, uuid=cached_uuid, timeout=timeout)
             else:
-                status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, ign=self.ign)
+                status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, ign=self.ign, timeout=timeout)
+
+            if status_code == 408:
+                print("timeout")
+                if self.active:
+                    self.error_message = f"$bRetrying....."
+                    self.render_request()
+                    self.updating = False
+                    await self.update(timeout=15)
+                return
 
             if data.get("cause",None) == "You have already looked up this name recently":
                 self.error_message = f"Username lookup failed."
@@ -47,7 +58,6 @@ class Player:
                 status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, uuid=uuid)
             
             if data.get("throttle",None):
-                expected_reset = time.time()%60
                 if self.active:
                     for i in range(3):
                         self.error_message = f"$bRetrying in {3-i} sec"
@@ -72,14 +82,15 @@ class Player:
                 return
 
             player = data.get("player")
-            self.uuid = player.get("uuid")
-            test_uuid_cache[self.ign.lower()] = self.uuid
-            self.ign = player.get("displayname")
-            self.data["hypixel"] = player
-            self.render_request()
+            hypixel = Stats(player)
+            self.data["hypixel"] = hypixel
 
-            self.data["skin"] = await AsyncAPI.get_session_skin(self.uuid, int(24))
+            self.uuid = hypixel.uuid
+            uuid_cache[self.ign.lower()] = self.uuid
+            self.ign = hypixel.displayname
+            
             self.render_request()
+            self.data["skin"] = await AsyncAPI.get_session_skin(self.uuid, int(24))
 
         except Exception as e:
             print(e)

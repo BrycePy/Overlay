@@ -195,7 +195,7 @@ class MessageProcessor:
         self.players = {}
         
     async def process(self,raw_message):
-        message = re.sub(chr(167)+"[0-9a-fA-F]","",raw_message)
+        message = re.sub(chr(167)+"[0-9a-fA-FklmnorKLMNOR]","",raw_message)
 
         self.message_buffer.append(dict(message=message,raw_message=raw_message))
         if len(self.message_buffer)>100: self.message_buffer.pop(0)

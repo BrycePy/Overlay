@@ -42,6 +42,8 @@ class Config:
         default("fade_timeout", 5.0)
         default("hypixel_api_key", "")
         default("lobby_chat_words", ["your username here", "word1", "BoomZa", "MinuteBrain"])
+        default("client_profiles",{"Vanila/Forge": r"$APPDATA\.minecraft\logs\latest.log",
+                             "Lunar Client (1.8)": r"$USERPROFILE\.lunarclient\offline\1.8\logs\latest.log"})
 
 config = Config()
 

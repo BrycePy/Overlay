@@ -7,39 +7,40 @@ from io import BytesIO
 from PIL import Image
 import time
 
+connector = aiohttp.TCPConnector()
+session = aiohttp.ClientSession(connector=connector)
+
 class AsyncAPI:
-    async def _get_json(url):
+    async def _get_json(url, timeout=30):
         data = None
-        async with aiohttp.ClientSession() as session:
-            try:
-                respond = await session.get(url, timeout = 30)
-                data = await respond.json()
-                status_code = respond.status
-            except asyncio.TimeoutError:
-                data = None
-                status_code = 408
+        try:
+            respond = await session.get(url, timeout=timeout)
+            data = await respond.json()
+            status_code = respond.status
+        except asyncio.TimeoutError:
+            data = None
+            status_code = 408
         if status_code!=200: print(status_code,url,data)
         return status_code, data
 
     async def _get_content(url):
         data = None
-        async with aiohttp.ClientSession() as session:
-            try:
-                respond = await session.get(url, timeout = 30)
-                data = await respond.read()
-                status_code = respond.status
-            except asyncio.TimeoutError:
-                data = None
-                status_code = 408
+        try:
+            respond = await session.get(url, timeout = 30)
+            data = await respond.read()
+            status_code = respond.status
+        except asyncio.TimeoutError:
+            data = None
+            status_code = 408
         if status_code!=200: print(status_code,url)
         return status_code, data
 
-    async def get_hypixel(api_key,ign=None,uuid=None):
+    async def get_hypixel(api_key,ign=None,uuid=None,timeout=5):
         if uuid:
             url = f"https://api.hypixel.net/player?key={api_key}&uuid={uuid}"
         else:
             url = f"https://api.hypixel.net/player?key={api_key}&name={ign}"
-        status_code, data = await AsyncAPI._get_json(url)
+        status_code, data = await AsyncAPI._get_json(url,timeout)
         return status_code, data
         
         # 403 invalid key

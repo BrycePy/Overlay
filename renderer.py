@@ -38,7 +38,7 @@ def grayout_dec(num):
 class Bedwars:
     def render(img, ign, player, font):
         data = player.data
-        bedwars = data.get("hypixel",{}).get("stats",{}).get("Bedwars",{})
+        hypixel = data.get("hypixel")
 
         def render_skin():
             if data.get("skin"):
@@ -50,26 +50,18 @@ class Bedwars:
             util.text(img, (200,0), f"{ign}", font, anchor="C")
 
         def render_normal():
-            hypixel = data.get("hypixel")
-            star = util.get_star_text(hypixel.get("achievements").get("bedwars_level",0))
+            bw = hypixel.bw[0]
+            star = util.get_star_text(bw.level)
+            display_name = f"{hypixel.chat.name_color}{ign}"
+            ws = bw.winstreak or "$8-"
+            fkdr = bw.fkdr
+            wlr = bw.wlr
+            bblr = bw.bblr
+            tag = f"$8-"
+
             util.text(img, (30,0), f"{star}", font, anchor="L")
-
-            rank = hypixel.get("newPackageRank","")
-            mvppp = hypixel.get("monthlyPackageRank","")
-            name_color = "$7"
-            if rank.startswith("VIP"): name_color = "$a"
-            elif rank.startswith("MVP"): name_color = "$b"
-            if rank.startswith("MVP") and mvppp.startswith("SUPERSTAR"): name_color = "$6"
-
-            util.text(img, (200,0), f"{name_color}{ign}", font, anchor="C")
-            
-
-            ws = bedwars.get("winstreak","$8-")
-            fkdr = bedwars.get("final_kills_bedwars",0) / max(1,bedwars.get("final_deaths_bedwars",1))
-            wlr = bedwars.get("wins_bedwars",0) / max(1,bedwars.get("losses_bedwars",1))
-            bblr = bedwars.get("beds_broken_bedwars",0) / max(1,bedwars.get("beds_lost_bedwars",1))
-
-            util.text(img, (330,0), f"$8-", font, anchor="C")
+            util.text(img, (200,0), f"{display_name}", font, anchor="C")
+            util.text(img, (330,0), f"{tag}", font, anchor="C")
             util.text(img, (390,0), f"{ws}", font, anchor="C")
             util.text(img, (450+24,0), f"{grayout_dec(fkdr)}", font, anchor="R")
             util.text(img, (510+24,0), f"{grayout_dec(wlr)}", font, anchor="R")
@@ -105,11 +97,10 @@ class Bedwars:
         util.text(img, (570,0), "$bBBLR", font, anchor="C", bold=True)
 
     def sort_function(player):
-        hypixel = player.data.get("hypixel",{})
+        hypixel = player.data.get("hypixel")
         if player.nicked: return 99999999999999
         if not hypixel: return -99999999999999
-        bedwars = hypixel.get("stats",{}).get("Bedwars",{})
-        return bedwars.get("wins_bedwars", 0)
+        return hypixel.bw[0].fkdr * hypixel.bw[0].wins * hypixel.bw[0].level
 
     def sort(players):
         return sorted(list(players), key=lambda ign: Bedwars.sort_function(players[ign]), reverse=True)
@@ -118,24 +109,9 @@ class Bedwars:
 class LobbyChat:
     def render(img, ign, player, font):
         data = player.data
+        hypixel = data.get("hypixel")
 
-        hypixel = data.get("hypixel",{})
-        bedwars = hypixel.get("stats",{}).get("Bedwars",{})
-        
         username = player.ign
-        rank = hypixel.get("newPackageRank","")
-        mvppp = hypixel.get("monthlyPackageRank","")
-        name_color = "$7"
-        text_color = "$7"
-        if rank.startswith("VIP"):
-            name_color = "$a"
-            text_color = "$f"
-        elif rank.startswith("MVP"):
-            name_color = "$b"
-            text_color = "$f"
-        if rank.startswith("MVP") and mvppp.startswith("SUPERSTAR"):
-            name_color = "$6"
-            text_color = "$f"
 
         def render_skin():
             if data.get("skin"):
@@ -147,20 +123,19 @@ class LobbyChat:
             util.text(img, (200,0), f"{ign}", font, anchor="C")
 
         def render_normal():
-            ws = bedwars.get("winstreak","$8-")
-            fkdr = bedwars.get("final_kills_bedwars",0) / max(1,bedwars.get("final_deaths_bedwars",1))
-            wlr = bedwars.get("wins_bedwars",0) / max(1,bedwars.get("losses_bedwars",1))
-            bblr = bedwars.get("beds_broken_bedwars",0) / max(1,bedwars.get("beds_lost_bedwars",1))
-
-            star = util.get_star_text(hypixel.get("achievements").get("bedwars_level",0), True)
+            bw = hypixel.bw[0]
+            star = util.get_star_text(bw.level, True)
+            ws = bw.winstreak or "$8-"
+            fkdr = bw.fkdr
+            wlr = bw.wlr
 
             message = data.get("latest_message",":-").split(":",1)[-1]
-            message = highlight(message,text_color)
+            message = highlight(message,hypixel.chat.text_color)
 
             util.text(img, (70,0), f"{ws}", font, anchor="R")
             util.text(img, (130,0), f"{grayout_dec(wlr)}", font, anchor="R")
             util.text(img, (190,0), f"{grayout_dec(fkdr)}", font, anchor="R")
-            util.text(img, (200,0), f"{star} {name_color}{username}$f: {text_color}{message}", font, anchor="L")
+            util.text(img, (200,0), f"{star} {hypixel.chat.name_color}{username}$f: {hypixel.chat.text_color}{message}", font, anchor="L")
 
         def render_error():
             util.text(img, (65,0), f"$c(error)", font, anchor="C")
@@ -169,9 +144,9 @@ class LobbyChat:
 
         def render_loading():
             message = data.get("latest_message",":-").split(":",1)[-1]
-            message = highlight(message,text_color)
+            message = highlight(message,"$7")
             util.text(img, (95,0), f"$7< fetching stats >", font, anchor="C")
-            util.text(img, (200,0), f"$8[????] {name_color}{username}$f: {text_color}{message}", font, anchor="L")
+            util.text(img, (200,0), f"$8[????] $7{username}$f: $f{message}", font, anchor="L")
 
 
         if player.nicked:
