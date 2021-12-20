@@ -36,6 +36,8 @@ TODO
 
 """
 
+_version = "3.0.3Dev"
+
 global_image = {}
 global_task = []
 
@@ -181,7 +183,7 @@ class Overlay:
         self.fg.attributes("-topmost",True)
         self.stats.attributes("-topmost",True)
 
-        #self.bg.bind('<Double-Button-1>', self.mouse_double_click)
+        self.bg.bind('<Double-Button-1>', self.mouse_double_click)
         self.bg.bind("<Button-1>", lambda e: (self.fg.lift(), self.root.lift(),
                                               self.stats.lift(), self.mouse_click(e)))
         self.bg.bind("<Motion>", self.mouse_hover)
@@ -302,7 +304,7 @@ class Overlay:
         size_frame = tk.Frame(root, bg=bg_color, relief="flat", cursor="sizing", width=3)
         size_frame.pack(fill=tk.Y, side=tk.RIGHT)
 
-        self.l_version = tk.Label(root, text="(v3.0.0 dev)", bg=bg_color, fg="gray", relief="flat", font="Arial 10 bold")
+        self.l_version = tk.Label(root, text=f"(v{_version})", bg=bg_color, fg="gray", relief="flat", font="Arial 10 bold")
         self.l_version.pack(fill=tk.Y, side=tk.RIGHT)
 
         self.l_title = tk.Label(root, text="BWSTATS OVERLAY", bg=bg_color, fg="white", relief="flat", font="Arial 10 bold")
@@ -557,6 +559,7 @@ class Overlay:
         player_order.clear()
         player_order.extend(temp)
 
+    clickthrough_state = True
     async def foreground_app_monitor(self):
         await asyncio.sleep(1)
         def on_window_change(is_mc, class_name):
@@ -566,6 +569,7 @@ class Overlay:
                 self.fg.attributes("-topmost", True)
                 self.fg.lift(self.bg)
                 uicore.set_clickthrough(int(self.bg.frame(),16), True)
+                self.clickthrough_state = True
                 event.post("mc_focus", None)
             else:
                 self.root.attributes("-topmost", False)
@@ -574,6 +578,7 @@ class Overlay:
                 win32gui.BringWindowToTop(hwnd)
                 self.root.after(100, self.fg.lift, self.bg)
                 uicore.set_clickthrough(int(self.bg.frame(),16), False)
+                self.clickthrough_state = False
 
         is_mc_pre = None
         while True:
@@ -649,7 +654,7 @@ class Overlay:
             await asyncio.sleep(1/120)
 
     async def double_click_check(self):
-        if hovering(self.bg) and self.bg.get_alpha() != 0:
+        if hovering(self.bg) and self.bg.get_alpha() != 0 and self.clickthrough_state:
             self.mouse_double_click(None)
 
 def hovering(root):
@@ -666,7 +671,7 @@ if __name__ == '__main__':
     runner = asyncio.get_event_loop().create_task
     overlay = Overlay()
 
-    title = "BWSTATS OVERLAY CORE"
+    title = f"BWSTATS CORE (v{_version})"
     
     console_hwnd = win32gui.FindWindow(None, temp_title)
     if console_hwnd:
@@ -701,7 +706,7 @@ if __name__ == '__main__':
         if uicore.is_minecraft():
             root_callback = overlay.root.append_callback
             if e.event_type == "down":
-                root_callback(overlay.shift_view,200)
+                root_callback(overlay.shift_view,140)
             else:
                 root_callback(overlay.shift_view,0)
 

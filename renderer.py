@@ -82,6 +82,8 @@ class Bedwars:
             util.text(img, (450+24,0), f"{fkdr_color}{grayout_dec(fkdr)}", font, anchor="R")
             util.text(img, (510+24,0), f"{wlr_color}{grayout_dec(wlr)}", font, anchor="R")
             util.text(img, (570+24,0), f"{bblr_color}{grayout_dec(bblr)}", font, anchor="R")
+            util.text(img, (640+24,0), f"{bw.final_kills}", font, anchor="R")
+            util.text(img, (710+24,0), f"{bw.wins}", font, anchor="R")
 
         def render_error():
             util.text(img, (65,0), f"$c(error)", font, anchor="C")
@@ -111,8 +113,8 @@ class Bedwars:
         util.text(img, (450,0), "$bFKDR", font, anchor="C", bold=True)
         util.text(img, (510,0), "$bWLR", font, anchor="C", bold=True)
         util.text(img, (570,0), "$bBBLR", font, anchor="C", bold=True)
-        util.text(img, (680,0), "$bFINALS", font, anchor="C", bold=True)
-        util.text(img, (770,0), "$bWINS", font, anchor="C", bold=True)
+        util.text(img, (640,0), "$bFINALS", font, anchor="C", bold=True)
+        util.text(img, (710,0), "$bWINS", font, anchor="C", bold=True)
 
     def sort_function(player):
         hypixel = player.data.get("hypixel")
