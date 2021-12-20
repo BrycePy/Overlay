@@ -31,9 +31,11 @@ def grayout_dec(num):
     if num>=1000:
         return f"{num}"
     elif num>=100:
-        return f"{num:.1f}".replace(".","$c.$7")
+        #return f"{num:.1f}".replace(".","$c.$7")
+        return f"{num:.1f}"
     else:
-        return f"{num:.2f}".replace(".","$c.$7")
+        #return f"{num:.2f}".replace(".","$c.$7")
+        return f"{num:.2f}"
 
 class Bedwars:
     def render(img, ign, player, font):
@@ -43,7 +45,7 @@ class Bedwars:
         def render_skin():
             if data.get("skin"):
                 skin = data.get("skin")
-                img.paste(skin, (3, -6), skin)
+                img.paste(skin, (3, 0), skin)
 
         def render_nick():
             util.text(img, (65,0), f"$c< Nicked >", font, anchor="C")
@@ -53,19 +55,31 @@ class Bedwars:
             bw = hypixel.bw[0]
             star = util.get_star_text(bw.level)
             display_name = f"{hypixel.chat.name_color}{ign}"
-            ws = bw.winstreak or "$8-"
+
+            ws = bw.winstreak or "-"
             fkdr = bw.fkdr
             wlr = bw.wlr
             bblr = bw.bblr
+            index = bw.index
+
+            if bw.winstreak:
+                ws_color = "$" + util.get_string_from_range(config.get("color_bw_ws"), ws)
+            else:
+                ws_color = "$8"
+            fkdr_color = "$" + util.get_string_from_range(config.get("color_bw_fkdr"), fkdr)
+            wlr_color = "$" + util.get_string_from_range(config.get("color_bw_wlr"), wlr)
+            bblr_color = "$" + util.get_string_from_range(config.get("color_bw_bblr"), bblr)
+            index_color = "$" + util.get_string_from_range(config.get("color_bw_index"), index)
+
             tag = f"$8-"
 
-            util.text(img, (30,0), f"{star}", font, anchor="L")
+            util.text(img, (30,0), f"{index_color}{chr(9609)}{star}", font, anchor="L")
             util.text(img, (200,0), f"{display_name}", font, anchor="C")
             util.text(img, (330,0), f"{tag}", font, anchor="C")
-            util.text(img, (390,0), f"{ws}", font, anchor="C")
-            util.text(img, (450+24,0), f"{grayout_dec(fkdr)}", font, anchor="R")
-            util.text(img, (510+24,0), f"{grayout_dec(wlr)}", font, anchor="R")
-            util.text(img, (570+24,0), f"{grayout_dec(bblr)}", font, anchor="R")
+            util.text(img, (390,0), f"{ws_color}{ws}", font, anchor="C")
+            util.text(img, (450+24,0), f"{fkdr_color}{grayout_dec(fkdr)}", font, anchor="R")
+            util.text(img, (510+24,0), f"{wlr_color}{grayout_dec(wlr)}", font, anchor="R")
+            util.text(img, (570+24,0), f"{bblr_color}{grayout_dec(bblr)}", font, anchor="R")
 
         def render_error():
             util.text(img, (65,0), f"$c(error)", font, anchor="C")
@@ -100,7 +114,7 @@ class Bedwars:
         hypixel = player.data.get("hypixel")
         if player.nicked: return 99999999999999
         if not hypixel: return -99999999999999
-        return hypixel.bw[0].fkdr * hypixel.bw[0].wins * hypixel.bw[0].level
+        return hypixel.bw[0].index
 
     def sort(players):
         return sorted(list(players), key=lambda ign: Bedwars.sort_function(players[ign]), reverse=True)
@@ -116,7 +130,7 @@ class LobbyChat:
         def render_skin():
             if data.get("skin"):
                 skin = data.get("skin")
-                img.paste(skin, (3, -6), skin)
+                img.paste(skin, (3, 0), skin)
 
         def render_nick():
             util.text(img, (65,0), f"$c< Nicked >", font, anchor="C")
@@ -125,17 +139,26 @@ class LobbyChat:
         def render_normal():
             bw = hypixel.bw[0]
             star = util.get_star_text(bw.level, True)
-            ws = bw.winstreak or "$8-"
+            ws = bw.winstreak or "-"
             fkdr = bw.fkdr
             wlr = bw.wlr
+            index = bw.index
+
+            if bw.winstreak:
+                ws_color = "$" + util.get_string_from_range(config.get("color_bw_ws"), ws)
+            else:
+                ws_color = "$8"
+            fkdr_color = "$" + util.get_string_from_range(config.get("color_bw_fkdr"), fkdr)
+            wlr_color = "$" + util.get_string_from_range(config.get("color_bw_wlr"), wlr)
+            index_color = "$" + util.get_string_from_range(config.get("color_bw_index"), index)
 
             message = data.get("latest_message",":-").split(":",1)[-1]
             message = highlight(message,hypixel.chat.text_color)
 
-            util.text(img, (70,0), f"{ws}", font, anchor="R")
-            util.text(img, (130,0), f"{grayout_dec(wlr)}", font, anchor="R")
-            util.text(img, (190,0), f"{grayout_dec(fkdr)}", font, anchor="R")
-            util.text(img, (200,0), f"{star} {hypixel.chat.name_color}{username}$f: {hypixel.chat.text_color}{message}", font, anchor="L")
+            util.text(img, (70,0), f"{ws_color}{ws}", font, anchor="R")
+            util.text(img, (130,0), f"{wlr_color}{grayout_dec(wlr)}", font, anchor="R")
+            util.text(img, (190,0), f"{fkdr_color}{grayout_dec(fkdr)}", font, anchor="R")
+            util.text(img, (200,0), f"{index_color}{chr(9609)}{star} {hypixel.chat.name_color}{username}$f: {hypixel.chat.text_color}{message}", font, anchor="L")
 
         def render_error():
             util.text(img, (65,0), f"$c(error)", font, anchor="C")

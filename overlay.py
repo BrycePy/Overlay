@@ -225,7 +225,7 @@ class Overlay:
         self.render_mode = renderer.Bedwars
 
         self.root.after(500, event.post, "player_list_update", ["MinuteBrain", "decliner", "Eldenax", "preadolescence"])
-        self.root.after(600, event.post, "player_list_update", ["xMqt", "T_H_O_R", "ChristmasRudolph"])
+        self.root.after(600, event.post, "player_list_update", ["xMqt", "T_H_O_R", "Opmine"])
         self.root.after(700, event.post, "player_list_update", ["MerryQuackwy", "_Me", "XMASCHER"])
         self.root.after(800, event.post, "player_list_update", ["GreenEggsAndJan", "XMASWOLF", "quin_in_the_snow","MinuteBrainN"])
 
@@ -308,8 +308,8 @@ class Overlay:
         w, h = top.winfo_width(), top.winfo_height()
         img = Image.new("RGB", (w, h))
         draw = ImageDraw.Draw(img)
-        draw.rectangle((0, 0, w, h), fill="#330033")
-        draw.rectangle((0, 0, w//2, h), fill="#000033")
+        draw.rectangle((0, 0, w, h), fill=config.get("bg_color_right"))
+        draw.rectangle((0, 0, w//2, h), fill=config.get("bg_color_left"))
 
         img = img.filter(ImageFilter.GaussianBlur(300))
         global_image["bg"] = ImageTk.PhotoImage(image=img)
@@ -589,12 +589,12 @@ class Overlay:
 
             except: pass
             await asyncio.sleep(0.5)
-    def hide(self):
-        self.bg.set_alpha(0)
-        self.fg.set_alpha(0)
-        self.root.set_alpha(0.1)
+    def _hide(self, force=False):
+        self.bg.set_alpha(0, force)
+        self.fg.set_alpha(0, force)
+        self.root.set_alpha(0.05)
 
-    def unhide(self):
+    def _unhide(self):
         self.bg.set_alpha(config.get("opacity"))
         self.fg.set_alpha(1)
         self.root.set_alpha(0.9)
@@ -603,9 +603,15 @@ class Overlay:
         if self.hide_schedule:
             self.root.after_cancel(self.hide_schedule)
             self.hide_schedule = None
-        self.unhide()
+        self._unhide()
         fade_timeout_ms = int(config.get("fade_timeout", 5)*1000)
-        self.hide_schedule = self.root.after(fade_timeout_ms, self.hide)
+        self.hide_schedule = self.root.after(fade_timeout_ms, self._hide)
+
+    def hide(self):
+        if self.hide_schedule:
+            self.root.after_cancel(self.hide_schedule)
+            self.hide_schedule = None
+        self._hide(force=True)
 
     async def double_click_check(self):
         if hovering(self.bg) and self.bg.get_alpha() != 0:
@@ -625,19 +631,22 @@ if __name__ == '__main__':
     runner = asyncio.get_event_loop().create_task
     overlay = Overlay()
 
+    event.subscribe("wake_request", lambda e: overlay.wake())
+    event.subscribe("hide_request", lambda e: overlay.hide())
+
     title = "BWSTATS OVERLAY CORE"
     
-    hwnd = win32gui.FindWindow(None, temp_title)
-    if hwnd:
-        uicore.remove_exit_button(hwnd)
-        win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+    console_hwnd = win32gui.FindWindow(None, temp_title)
+    if console_hwnd:
+        uicore.remove_exit_button(console_hwnd)
+        win32gui.ShowWindow(console_hwnd, win32con.SW_MINIMIZE)
     os.system(f"title {title}")
 
     _fullscreen = False
-    def keyboard_handle(event):
+    def fullscreen_handle(e):
         global _fullscreen
         if uicore.is_minecraft():
-            if event.event_type == "down":
+            if e.event_type == "down":
                 _fullscreen = not _fullscreen
                 if _fullscreen:
                     uicore.set_borderless(uicore.get_minecraft_hwnd(), True)
@@ -645,15 +654,36 @@ if __name__ == '__main__':
                     uicore.set_borderless(uicore.get_minecraft_hwnd(), False)
                     uicore.free_cursor()
         else:
-            if event.event_type == "down": keyboard.press(event.scan_code)
-            elif event.event_type == "up": keyboard.release(event.scan_code)
+            if e.event_type == "down": keyboard.press(e.scan_code)
+            elif e.event_type == "up": keyboard.release(e.scan_code)
 
-    keyboard.hook_key(87, keyboard_handle, suppress=True)
-    mouse.on_double_click(lambda: global_task.append(runner(overlay.double_click_check())))
+    def wake_handle(e):
+        if uicore.is_minecraft():
+            root_callback = overlay.root.append_callback
+            if e.event_type == "down":
+                root_callback(lambda: event.post("wake_request"))
+            else:
+                root_callback(lambda: event.post("hide_request"))
 
+    error = None
     try:
+        keyboard.hook_key(87, fullscreen_handle, suppress=True)
+        keyboard.hook_key(config.get("key_wake"), wake_handle, suppress=False)
+        mouse.on_double_click(lambda: global_task.append(runner(overlay.double_click_check())))
         overlay.start()
+    except Exception as e:
+        error = traceback.format_exc()
     finally:
         if _fullscreen:
+            print("* Disable fullscreen")
             uicore.set_borderless(uicore.get_minecraft_hwnd(), False)
             uicore.free_cursor()
+        if error:
+            print("")
+            print("=======EXIT WITH FOLLOWING ERROR=======")
+            print("")
+            print(error)
+            print("=======================================")
+            if console_hwnd:
+                win32gui.ShowWindow(console_hwnd, win32con.SW_NORMAL)
+            input("Press enter to exit")

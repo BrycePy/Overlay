@@ -33,6 +33,7 @@ class Stats:
             bw.fkdr = bw.final_kills / max(1,bw.final_deaths)
             bw.wlr = bw.wins / max(1,bw.losses)
             bw.bblr = bw.beds_broken / max(1,bw.beds_lost)
+            bw.index = bw.fkdr * bw.fkdr * bw.level
 
     def general(self):
         player = self.player
@@ -40,6 +41,7 @@ class Stats:
         self.uuid = player.get("uuid")
         self.displayname = player.get("displayname")
 
+        self.higher_rank = player.get("rank","")
         self.rank = player.get("newPackageRank","")
         self.mvppp = player.get("monthlyPackageRank","")
         _name_color = "$7"
@@ -54,7 +56,7 @@ class Stats:
             else:
                 _name_color = "$b"
                 _text_color = "$f"
-        elif self.rank == "YOUTUBER":
+        elif self.higher_rank == "YOUTUBER":
             _name_color = "$c"
             _text_color = "$f"
         self.chat = Object()

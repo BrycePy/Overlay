@@ -9,24 +9,29 @@ import win32clipboard
 import win32con
 from io import BytesIO
 
+
 async def send_command(command):
-    key_to_restore = ["a","s","d","w","space"] + list(keyboard.sided_modifiers)
+    key_to_restore = ["a", "s", "d", "w", "space"] + \
+        list(keyboard.sided_modifiers)
     keys_state = keyboard.stash_state()
-    for key in key_to_restore: keyboard.release(key)
-    await asyncio.sleep(2/60) # wait for around 2 game frame
+    for key in key_to_restore:
+        keyboard.release(key)
+    await asyncio.sleep(2/60)  # wait for around 2 game frame
     keyboard.press("t")
     await asyncio.sleep(2/60)
     keyboard.release("t")
-    for key in key_to_restore: keyboard.release(key)
+    for key in key_to_restore:
+        keyboard.release(key)
     await asyncio.sleep(3/60)
     keyboard.write("\b"*20 + f"/{command}" + "\n")
     keyboard.restore_state(keys_state)
 
-def text(img:Image.Image, xy:tuple, text:str, font:ImageFont.FreeTypeFont, shadow=True, bold=False, anchor="L"):
+
+def text(img: Image.Image, xy: tuple, text: str, font: ImageFont.FreeTypeFont, shadow=True, bold=False, anchor="L"):
     text = re.sub("\$[klmnor]", "", text)
     temp = ["f"] + re.split("\$([0-9a-fA-F]|\#[0-9a-fA-F]{6})", text)
     text_only = "".join(temp[1::2])
-    size = font.getsize(text = text_only)
+    size = font.getsize(text=text_only)
     pixel_offset = int(font.size/13)
 
     adj_size = (size[0] + pixel_offset*len(text_only), size[1])
@@ -36,13 +41,16 @@ def text(img:Image.Image, xy:tuple, text:str, font:ImageFont.FreeTypeFont, shado
 
     cumulative_width = 0
     for t, c in zip(temp[1::2], temp[::2]):
-        if not t: continue
-        s = font.getsize(text = text_only)
-        if len(c) == 1: c = Colors.mc[int(c,16)]
+        if not t:
+            continue
+        s = font.getsize(text=text_only)
+        if len(c) == 1:
+            c = Colors.mc[int(c, 16)]
         draw.text((cumulative_width, 0), text=t, font=font, fill=c)
-        w, h = font.getsize(text = t)
+        w, h = font.getsize(text=t)
         cumulative_width += w
-        if bold: cumulative_width += pixel_offset
+        if bold:
+            cumulative_width += pixel_offset
 
     if anchor == "L":
         xy = xy
@@ -73,11 +81,12 @@ def get_star_text(star, b=False):
     star2 = chr(0x2743)
 
     if b:
-        low_prestiges = lambda star, color: f"${color}[{star}{star0}]"
+        def low_prestiges(star, color): return f"${color}[{star}{star0}]"
     else:
-        low_prestiges = lambda star, color: f"${color}{star}{star0}"
+        def low_prestiges(star, color): return f"${color}{star}{star0}"
 
-    zip_color = lambda texts, colors: "".join(f"${c}{t}" for t, c in zip(texts,colors))
+    def zip_color(texts, colors): return "".join(
+        f"${c}{t}" for t, c in zip(texts, colors))
 
     star_str = str(star)
 
@@ -216,32 +225,44 @@ def get_star_text(star, b=False):
         text = f"[{star}{star2}]"
         return zip_color(text, color)
 
+
 def send_to_clipboard(clip_type, data):
     win32clipboard.OpenClipboard()
     win32clipboard.EmptyClipboard()
     win32clipboard.SetClipboardData(clip_type, data)
     win32clipboard.CloseClipboard()
 
+
 def set_clipboard_text(text):
     send_to_clipboard(win32con.CF_UNICODETEXT, text)
 
-def set_clipboard_image(image:Image.Image):
+
+def set_clipboard_image(image: Image.Image):
     output = BytesIO()
     image.convert("RGB").save(output, "BMP")
     data = output.getvalue()[14:]
     output.close()
     send_to_clipboard(win32clipboard.CF_DIB, data)
 
+def get_string_from_range(range_str_pairs, value):
+    for boundary, string in reversed(range_str_pairs):
+        if value >= boundary:
+            return string
+    return string
+
 if __name__ == "__main__":
     ref = time.perf_counter()
-    image = Image.new("RGBA", (700,700), (0, 0, 0, 0))
+    image = Image.new("RGBA", (700, 700), (0, 0, 0, 0))
     font = ImageFont.truetype(font="Minecraft-Regular-Symbola.ttf", size=20)
     test_text = "".join([f"${i:x}AA" for i in range(8)])
     for i in range(32):
-        text(image, (150*(i//16)+150, 30*(i%16)), get_star_text(i*100 + 1), font, shadow=True, bold=False, anchor="R")
+        text(image, (150*(i//16)+150, 30*(i % 16)), get_star_text(i *
+             100 + 1), font, shadow=True, bold=False, anchor="R")
 
-    text(image, (0,650), "§b>§c>§a>§r §6[MVP§2++§6] reynasimp§f §6slid into the lobby! §a<§c<§b<".replace("§","$"), font)
-    text(image, (0,620), "█ §2[407?] §6[MVP§0++§6] Ramsy§f: It really is".replace("§","$"), font)
+    text(image, (0, 650),
+         "§b>§c>§a>§r §6[MVP§2++§6] reynasimp§f §6slid into the lobby! §a<§c<§b<".replace("§", "$"), font)
+    text(image, (0, 620),
+         "█ §2[407?] §6[MVP§0++§6] Ramsy§f: It really is".replace("§", "$"), font)
 
     print(time.perf_counter() - ref)
 

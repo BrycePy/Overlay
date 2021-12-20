@@ -93,7 +93,11 @@ class AllGame:
         msg_command = re.compile("^Can't find a player by the name of '([\w]{2,17})@'$").match(message)
         party_invite = re.compile("^(?:\[.+\] )(\w+) has invited you to join (?:\[.+\] )?(?:their|(\w+)\'s) party!").match(message)
 
-        join_queue = (join_message or start_timer or start2_timer) and previous_message == " "*7
+        line_breaker_type1 = previous_message == " "*7
+        line_breaker_type2 = len(set(previous_message)) == 1
+        potential_first_line = join_message or start_timer or start2_timer
+        join_queue = potential_first_line and (line_breaker_type1 or line_breaker_type2)
+
         join_lobby = message == " "*25 and previous_message == " "*37
 
         if who_command or join_message or leave_message:
