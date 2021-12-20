@@ -12,13 +12,16 @@ def is_borderless(hwnd,current_style):
 def is_minecraft():
     active_hwnd = win32gui.GetForegroundWindow()
     class_name = win32gui.GetClassName(active_hwnd)
-    return class_name == "LWJGL"
+    return class_name in ["LWJGL", "GLFW30"]
 
 def is_mouse_down():
     return win32api.GetKeyState(0x01) < 0 or win32api.GetKeyState(0x02) < 0
 
 def get_minecraft_hwnd():
-    return win32gui.FindWindow("LWJGL", None)
+    mc = win32gui.FindWindow("LWJGL", None)
+    if not mc:
+        mc = win32gui.FindWindow("GLFW30", None)
+    return mc
 
 def get_active_hwnd():
     return win32gui.GetForegroundWindow()

@@ -147,7 +147,7 @@ async def log_reader(overlay):
     event.subscribe("chat", chat)
 
     while True:
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.1)
         for message in log_listener.get_messages():
             print(message)
             await mp.process(message)
@@ -167,14 +167,14 @@ class Overlay:
         pass
 
     def start(self):
-        global puro
         self.loop = asyncio.get_event_loop()
 
         self.root = self.root_root()
-        puro = tk.PhotoImage(file=resource_path('puro.png'))
         self.bg = self.bg_toplevel(self.root)
         self.fg = self.fg_toplevel(self.root)
         self.stats = self.stats_toplevel(self.root)
+
+        self.load_bg_image()
 
         self.root.attributes("-topmost",True)
         self.bg.attributes("-topmost",True)
@@ -243,6 +243,30 @@ class Overlay:
 
         self.loop.run_forever()
 
+    def load_bg_image(self):
+        w, h = self.bg.winfo_width(), self.bg.winfo_height()
+        img = Image.new("RGB", (w, h))
+        draw = ImageDraw.Draw(img)
+        draw.rectangle((0, 0, w, h), fill=config.get("background_color_right"))
+        draw.rectangle((0, 0, w//2, h), fill=config.get("background_color_left"))
+
+        img = img.filter(ImageFilter.GaussianBlur(300))
+        global_image["-bg"] = ImageTk.PhotoImage(image=img)
+        self.bg_canvas.create_image(0, 0, image=global_image["-bg"], anchor="nw")
+
+        if config.get("background_image"):
+            custom_path = config.get("background_image_path")
+            if custom_path and custom_path!=r"C:\Users\example\Desktop\example.png":
+                if not os.path.isfile(custom_path):
+                    custom_path = resource_path('puro.png')
+            else:
+                custom_path = resource_path('puro.png')
+            window_width = self.bg.winfo_width()
+            img = Image.open(custom_path)
+            img = img.resize((window_width, int(img.height*(window_width/img.width))), Image.BICUBIC)
+            global_image["-bg_image"] = ImageTk.PhotoImage(image=img)
+            self.bg_canvas.create_image(0, 0, image=global_image["-bg_image"], anchor="nw")
+
     def root_root(self):
         offset = [0, 0, 0 ,0]
 
@@ -305,17 +329,6 @@ class Overlay:
         self.bg_canvas = tk.Canvas(top, background=bg_color, relief="flat", highlightthickness=0)
         self.bg_canvas.pack(fill=tk.BOTH, expand=True)
 
-        w, h = top.winfo_width(), top.winfo_height()
-        img = Image.new("RGB", (w, h))
-        draw = ImageDraw.Draw(img)
-        draw.rectangle((0, 0, w, h), fill=config.get("bg_color_right"))
-        draw.rectangle((0, 0, w//2, h), fill=config.get("bg_color_left"))
-
-        img = img.filter(ImageFilter.GaussianBlur(300))
-        global_image["bg"] = ImageTk.PhotoImage(image=img)
-        self.bg_canvas.create_image(0, 0, image=global_image["bg"], anchor="nw")
-        self.bg_canvas.create_image(0, 0, image=puro, anchor="nw")
-
         top.update()
         uicore.set_clickthrough(int(top.frame(),16), True)
         return top
@@ -327,7 +340,7 @@ class Overlay:
         top.configure(background=self.transparent)
         top.overrideredirect(1)
 
-        self.canvas = tk.Canvas(top, background=self.transparent, relief="flat", highlightthickness=0)
+        self.canvas = tk.Canvas(top, background=self.transparent, relief="flat", highlightthickness=0, xscrollincrement=1)
         self.canvas.pack(fill=tk.BOTH, expand=True)
         self.canvas_header = self.canvas.create_image(0, 0, image=None, anchor="nw")
 
@@ -465,7 +478,7 @@ class Overlay:
                 render_court += 1
                 ref = time.perf_counter()
                 updated = True
-                img = Image.new("RGBA", (win_width, self.row_height+4), (1,5,3,50))
+                img = Image.new("RGBA", (win_width + 200, self.row_height+4), (1,5,3,50))
                 self.render_mode.render(img, ign, player, font)
 
                 image_name = f"stats-{ign}"
@@ -478,7 +491,7 @@ class Overlay:
                 self.pil_time_avg_buffer.append(pil_time)
                 if len(self.pil_time_avg_buffer)>10: self.pil_time_avg_buffer.pop(0)
                 average = sum(self.pil_time_avg_buffer) / len(self.pil_time_avg_buffer)
-                print(f"Generated image for {ign}. (t={pil_time:.3f}s avg={average:.3f}s)")
+                #print(f"Generated image for {ign}. (t={pil_time:.3f}s avg={average:.3f}s)")
 
             rendered[ign]["target_y"] = win_height - (count*self.row_height + 5 + self.row_height - self.scroll_offset)
 
@@ -515,7 +528,7 @@ class Overlay:
         if self.current_header != self.render_mode:
             self.current_header = self.render_mode
 
-            win_width = self.fg.winfo_width()
+            win_width = int(self.fg.winfo_width() + 200)
             img = Image.new("RGBA", (win_width, 24), (1,5,3,170))
             self.render_mode.header(img, font)
             global_image["header-raw"] = img
@@ -569,12 +582,12 @@ class Overlay:
                 try:    class_name = win32gui.GetClassName(hwnd)
                 except: class_name = None
                 if class_name:
-                    is_mc = class_name == "LWJGL"
+                    is_mc = class_name in ["LWJGL", "GLFW30"]
                     if is_mc_pre != is_mc:
                         is_mc_pre = is_mc
                         on_window_change(is_mc, class_name)
 
-                    if class_name == "LWJGL":
+                    if is_mc:
                         if win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE) & 0x80000000:
                             global _fullscreen
                             await asyncio.sleep(0.5)
@@ -613,6 +626,28 @@ class Overlay:
             self.hide_schedule = None
         self._hide(force=True)
 
+    canvas_internal_x = 0
+    def canvas_x_moveto(self, value: int):
+        diff = value - self.canvas_internal_x
+        if diff!=0:
+            self.canvas.xview_scroll(diff, 'units')
+            self.canvas_internal_x = value
+            self.fg.update()
+
+    canvas_target_x = 0
+    canvas_current_x = 0
+    async def shift_view(self, target=None):
+        if target is not None:
+            self.canvas_target_x = target
+        while self.canvas_current_x != self.canvas_target_x:
+            diff = self.canvas_target_x - self.canvas_current_x
+            if abs(diff) > 5 and self.bg.get_alpha()!=0:
+                self.canvas_current_x = (self.canvas_target_x + self.canvas_current_x*2)/3
+            else:
+                self.canvas_current_x = self.canvas_target_x
+            self.canvas_x_moveto(int(self.canvas_current_x))
+            await asyncio.sleep(1/120)
+
     async def double_click_check(self):
         if hovering(self.bg) and self.bg.get_alpha() != 0:
             self.mouse_double_click(None)
@@ -630,9 +665,6 @@ def relative_pos(root):
 if __name__ == '__main__':
     runner = asyncio.get_event_loop().create_task
     overlay = Overlay()
-
-    event.subscribe("wake_request", lambda e: overlay.wake())
-    event.subscribe("hide_request", lambda e: overlay.hide())
 
     title = "BWSTATS OVERLAY CORE"
     
@@ -661,21 +693,30 @@ if __name__ == '__main__':
         if uicore.is_minecraft():
             root_callback = overlay.root.append_callback
             if e.event_type == "down":
-                root_callback(lambda: event.post("wake_request"))
+                root_callback(lambda: overlay.wake())
             else:
-                root_callback(lambda: event.post("hide_request"))
+                root_callback(lambda: overlay.hide())
+
+    def shift_handle(e):
+        if uicore.is_minecraft():
+            root_callback = overlay.root.append_callback
+            if e.event_type == "down":
+                root_callback(overlay.shift_view,200)
+            else:
+                root_callback(overlay.shift_view,0)
 
     error = None
     try:
-        keyboard.hook_key(87, fullscreen_handle, suppress=True)
+        keyboard.hook_key(config.get("key_fullscreen"), fullscreen_handle, suppress=True)
         keyboard.hook_key(config.get("key_wake"), wake_handle, suppress=False)
+        keyboard.hook_key(config.get("key_shift_view"), shift_handle, suppress=False)
         mouse.on_double_click(lambda: global_task.append(runner(overlay.double_click_check())))
         overlay.start()
     except Exception as e:
         error = traceback.format_exc()
     finally:
         if _fullscreen:
-            print("* Disable fullscreen")
+            print(" *  debug: borderless fullscreen disabled")
             uicore.set_borderless(uicore.get_minecraft_hwnd(), False)
             uicore.free_cursor()
         if error:

@@ -21,7 +21,7 @@ class Player:
     async def update(self, timeout=5):
         if self.updating: return
         self.updating = True
-        print("updating", self.ign)
+        #print("updating", self.ign)
         try:
             hypixel_api_key = config.get("hypixel_api_key")
             if not hypixel_api_key:
@@ -36,7 +36,7 @@ class Player:
                 status_code, data = await AsyncAPI.get_hypixel(api_key=hypixel_api_key, ign=self.ign, timeout=timeout)
 
             if status_code == 408:
-                print("timeout")
+                #print("timeout")
                 if self.active:
                     self.error_message = f"$bRetrying....."
                     self.render_request()

@@ -58,17 +58,18 @@ class AsyncTk(tk.Tk, AlphaAnimation):
             await asyncio.sleep(interval)
             
     @staticmethod
-    async def patch_callback(callback):
+    async def patch_callback(task):
+        callback, x = task
         try:
             if asyncio.iscoroutinefunction(callback):
-                await callback()
+                await callback(*x)
             else:
-                callback()
+                callback(*x)
         except Exception:
             traceback.print_exc()
 
-    def append_callback(self, callback):
-        self.callback_queue.append(callback)
+    def append_callback(self, callback, *x):
+        self.callback_queue.append((callback, x))
 
     def close(self):
         for task in self.tasks:

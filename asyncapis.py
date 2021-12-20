@@ -20,7 +20,7 @@ class AsyncAPI:
         except asyncio.TimeoutError:
             data = None
             status_code = 408
-        if status_code!=200: print(status_code,url,data)
+        if status_code!=200: print("requests:",status_code, url.split("?")[0], data)
         return status_code, data
 
     async def _get_content(url):

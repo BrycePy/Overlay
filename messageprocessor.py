@@ -6,6 +6,7 @@ import json
 import event
 import util
 from colored import fg, attr
+from config import config
 
 # -----------------------------
 # You have joined [VIP+] oSpittinz's party!
@@ -106,10 +107,12 @@ class AllGame:
         if join_queue:
             self.players = list()
             print(ConsoleColour.ORANGE_3 + f"bedwars_handler: Spawn in a queue" + ConsoleColour.RESET)
-            async def send_who():
-                await asyncio.sleep(0.25)
-                await util.send_command("who")
-            asyncio.get_event_loop().create_task(send_who())
+            if config.get("auto_who"):
+                async def send_who():
+                    chat_key = config.get("auto_who_chat_key", "t")
+                    await asyncio.sleep(0.25)
+                    await util.send_command("who", chat_key)
+                asyncio.get_event_loop().create_task(send_who())
             event.post("queue_join", None)
             event.post("player_list_update",self.players)
             

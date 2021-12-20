@@ -45,7 +45,7 @@ class Bedwars:
         def render_skin():
             if data.get("skin"):
                 skin = data.get("skin")
-                img.paste(skin, (3, 0), skin)
+                img.paste(skin, (23, 0), skin)
 
         def render_nick():
             util.text(img, (65,0), f"$c< Nicked >", font, anchor="C")
@@ -56,24 +56,26 @@ class Bedwars:
             star = util.get_star_text(bw.level)
             display_name = f"{hypixel.chat.name_color}{ign}"
 
-            ws = bw.winstreak or "-"
-            fkdr = bw.fkdr
-            wlr = bw.wlr
-            bblr = bw.bblr
-            index = bw.index
-
-            if bw.winstreak:
+            if bw.winstreak is not None:
+                ws = bw.winstreak
                 ws_color = "$" + util.get_string_from_range(config.get("color_bw_ws"), ws)
             else:
+                ws = "-"
                 ws_color = "$8"
+
+            fkdr = bw.fkdr
+            wlr = bw.wlr
+            index = bw.index
+            bblr = bw.bblr
             fkdr_color = "$" + util.get_string_from_range(config.get("color_bw_fkdr"), fkdr)
             wlr_color = "$" + util.get_string_from_range(config.get("color_bw_wlr"), wlr)
-            bblr_color = "$" + util.get_string_from_range(config.get("color_bw_bblr"), bblr)
             index_color = "$" + util.get_string_from_range(config.get("color_bw_index"), index)
+            bblr_color = "$" + util.get_string_from_range(config.get("color_bw_bblr"), bblr)
 
             tag = f"$8-"
 
-            util.text(img, (30,0), f"{index_color}{chr(9609)}{star}", font, anchor="L")
+            util.text(img, (3,0), f"{index_color}{chr(9609)}", font, anchor="L")
+            util.text(img, (50,0), f"{star}", font, anchor="L")
             util.text(img, (200,0), f"{display_name}", font, anchor="C")
             util.text(img, (330,0), f"{tag}", font, anchor="C")
             util.text(img, (390,0), f"{ws_color}{ws}", font, anchor="C")
@@ -109,6 +111,8 @@ class Bedwars:
         util.text(img, (450,0), "$bFKDR", font, anchor="C", bold=True)
         util.text(img, (510,0), "$bWLR", font, anchor="C", bold=True)
         util.text(img, (570,0), "$bBBLR", font, anchor="C", bold=True)
+        util.text(img, (680,0), "$bFINALS", font, anchor="C", bold=True)
+        util.text(img, (770,0), "$bWINS", font, anchor="C", bold=True)
 
     def sort_function(player):
         hypixel = player.data.get("hypixel")
@@ -139,15 +143,17 @@ class LobbyChat:
         def render_normal():
             bw = hypixel.bw[0]
             star = util.get_star_text(bw.level, True)
-            ws = bw.winstreak or "-"
+
+            if bw.winstreak is not None:
+                ws = bw.winstreak
+                ws_color = "$" + util.get_string_from_range(config.get("color_bw_ws"), ws)
+            else:
+                ws = "-"
+                ws_color = "$8"
+
             fkdr = bw.fkdr
             wlr = bw.wlr
             index = bw.index
-
-            if bw.winstreak:
-                ws_color = "$" + util.get_string_from_range(config.get("color_bw_ws"), ws)
-            else:
-                ws_color = "$8"
             fkdr_color = "$" + util.get_string_from_range(config.get("color_bw_fkdr"), fkdr)
             wlr_color = "$" + util.get_string_from_range(config.get("color_bw_wlr"), wlr)
             index_color = "$" + util.get_string_from_range(config.get("color_bw_index"), index)

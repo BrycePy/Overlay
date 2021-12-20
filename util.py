@@ -10,16 +10,16 @@ import win32con
 from io import BytesIO
 
 
-async def send_command(command):
+async def send_command(command, chat_key="t"):
     key_to_restore = ["a", "s", "d", "w", "space"] + \
         list(keyboard.sided_modifiers)
     keys_state = keyboard.stash_state()
     for key in key_to_restore:
         keyboard.release(key)
     await asyncio.sleep(2/60)  # wait for around 2 game frame
-    keyboard.press("t")
+    keyboard.press(chat_key)
     await asyncio.sleep(2/60)
-    keyboard.release("t")
+    keyboard.release(chat_key)
     for key in key_to_restore:
         keyboard.release(key)
     await asyncio.sleep(3/60)
