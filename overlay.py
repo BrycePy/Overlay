@@ -24,7 +24,7 @@ import renderer
 import win32gui, win32con
 from config import config
 import keyboard
-import mouse
+# import mouse
 
 """
 
@@ -258,11 +258,8 @@ class Overlay:
 
         if config.get("background_image"):
             custom_path = config.get("background_image_path")
-            if custom_path and custom_path!=r"C:\Users\example\Desktop\example.png":
-                if not os.path.isfile(custom_path):
-                    custom_path = resource_path('puro.png')
-            else:
-                custom_path = resource_path('puro.png')
+            if not os.path.isfile(custom_path):
+                return
             window_width = self.bg.winfo_width()
             img = Image.open(custom_path)
             img = img.resize((window_width, int(img.height*(window_width/img.width))), Image.BICUBIC)
@@ -715,7 +712,7 @@ if __name__ == '__main__':
         keyboard.hook_key(config.get("key_fullscreen"), fullscreen_handle, suppress=True)
         keyboard.hook_key(config.get("key_wake"), wake_handle, suppress=False)
         keyboard.hook_key(config.get("key_shift_view"), shift_handle, suppress=False)
-        mouse.on_double_click(lambda: global_task.append(runner(overlay.double_click_check())))
+        # mouse.on_double_click(lambda: global_task.append(runner(overlay.double_click_check())))
         overlay.start()
     except Exception as e:
         error = traceback.format_exc()

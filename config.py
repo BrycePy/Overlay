@@ -19,6 +19,8 @@ class Config:
             if os.path.isfile(config_path):
                 with open(config_path, "r") as f:
                     self.config_f = json.load(f)
+            else:
+                self.config_f = {}
         except Exception:
             print("")
             print("config: unable to load config.json (invalid json format?)")
@@ -62,11 +64,12 @@ class Config:
         default("lobby_chat_words", ["your username here", "word1", "BoomZa", "MinuteBrain"])
         default("background_color_left", "#000033")
         default("background_color_right", "#330033")
-        default("background_image", True)
+        default("background_image", False)
         default("background_image_path", r"C:\Users\example\Desktop\example.png")
 
         default_clients = {
             "Vanilla/Forge": r"$APPDATA\.minecraft\logs\latest.log",
+            "Lunar Client": r"$USERPROFILE\.lunarclient\offline\multiver\logs\latest.log",
             "Lunar Client (1.7)": r"$USERPROFILE\.lunarclient\offline\1.7\logs\latest.log",
             "Lunar Client (1.8)": r"$USERPROFILE\.lunarclient\offline\1.8\logs\latest.log",
             "Lunar Client (1.12)": r"$USERPROFILE\.lunarclient\offline\1.12\logs\latest.log",
